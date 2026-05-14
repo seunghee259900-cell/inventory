@@ -130,6 +130,10 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
     <label>📅 날짜</label>
     <input type="date" id="d-date">
   </div>
+  <div class="datebar" style="margin-bottom:14px">
+    <label>✍️ 작성자</label>
+    <input type="text" id="d-writer" placeholder="이름 입력" style="background:none;border:none;color:var(--text);font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;flex:1">
+  </div>
 
   <div class="card">
     <div class="card-head"><div class="dot" style="background:var(--blue)"></div><div class="card-title">목뼈</div></div>
@@ -185,6 +189,10 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
     <label>📅 날짜</label>
     <input type="date" id="c-date">
   </div>
+  <div class="datebar" style="margin-bottom:14px">
+    <label>✍️ 작성자</label>
+    <input type="text" id="c-writer" placeholder="이름 입력" style="background:none;border:none;color:var(--text);font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;flex:1">
+  </div>
 
   <div class="card">
     <div class="card-head"><div class="dot" style="background:var(--purple)"></div><div class="card-title">고기 재고</div></div>
@@ -214,6 +222,10 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
   <div class="datebar">
     <label>📅 날짜</label>
     <input type="date" id="n-date">
+  </div>
+  <div class="datebar" style="margin-bottom:14px">
+    <label>✍️ 작성자</label>
+    <input type="text" id="n-writer" placeholder="이름 입력" style="background:none;border:none;color:var(--text);font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;flex:1">
   </div>
 
   <div class="card">
@@ -255,15 +267,41 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
   <button class="save-btn" id="btn-n" onclick="saveN()">💾 저장하기 (구글 시트에 자동 저장)</button>
 </div>
 
-<!-- ══ PAGE 4: 기록 ══ -->
+<!-- ══ PAGE 4: 기록 (달력) ══ -->
 <div class="page" id="page-history">
-  <div class="filter-bar">
-    <button class="filter-btn active" id="hf-all" onclick="filterH('all')">전체</button>
-    <button class="filter-btn" id="hf-dunsanok" onclick="filterH('dunsanok')">🍲 둔산옥</button>
-    <button class="filter-btn" id="hf-chungdam" onclick="filterH('chungdam')">🥘 청담</button>
-    <button class="filter-btn" id="hf-namwon" onclick="filterH('namwon')">🥩 남원</button>
+  <!-- 달력 헤더 -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border)">
+      <button onclick="prevMonth()" style="background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;padding:4px 8px">‹</button>
+      <div id="cal-title" style="font-size:15px;font-weight:700"></div>
+      <button onclick="nextMonth()" style="background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;padding:4px 8px">›</button>
+    </div>
+    <!-- 요일 헤더 -->
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center;padding:8px 0">
+      <div style="font-size:11px;color:var(--red);font-weight:700">일</div>
+      <div style="font-size:11px;color:var(--muted);font-weight:700">월</div>
+      <div style="font-size:11px;color:var(--muted);font-weight:700">화</div>
+      <div style="font-size:11px;color:var(--muted);font-weight:700">수</div>
+      <div style="font-size:11px;color:var(--muted);font-weight:700">목</div>
+      <div style="font-size:11px;color:var(--muted);font-weight:700">금</div>
+      <div style="font-size:11px;color:var(--blue);font-weight:700">토</div>
+    </div>
+    <!-- 달력 날짜 -->
+    <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);padding:0 4px 8px"></div>
   </div>
-  <div id="history-list"></div>
+
+  <!-- 선택된 날짜 기록 -->
+  <div id="cal-detail">
+    <div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">📅 날짜를 선택해주세요</div>
+  </div>
+
+  <!-- 최근 기록 목록 -->
+  <div style="margin-top:18px">
+    <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:10px;padding:0 2px">📋 최근 저장 기록</div>
+    <div id="recent-list">
+      <div class="loading"><span class="spinner"></span>불러오는 중...</div>
+    </div>
+  </div>
 </div>
 
 <div class="toast ok" id="toast"></div>
@@ -304,14 +342,6 @@ document.getElementById('pw-input').addEventListener('keypress', function(e){
 
 const today = new Date().toISOString().split('T')[0];
 ['d-date','c-date','n-date'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=today; });
-
-function showPage(name, btn){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('page-'+name).classList.add('active');
-  btn.classList.add('active');
-  if(name==='history') renderH(currentFilter);
-}
 
 const v = id => parseFloat(document.getElementById(id)?.value)||0;
 const fmtKg = n => n.toFixed(3)+' kg';
@@ -375,7 +405,8 @@ async function saveD(){
   const del=v('d-sales-baemin')+v('d-sales-coupang');
   const tot=v('d-sales-hall')+v('d-sales-galbi')+del;
   try{
-    await postData({store:'dunsanok', date:document.getElementById('d-date').value,
+    await postData({action:'upsert', store:'dunsanok', date:document.getElementById('d-date').value,
+      작성자:document.getElementById('d-writer').value||'미입력',
       목뼈_전날재고:v('d-neck-prev'), 목뼈_삶기전:v('d-neck-raw'), 목뼈_봉수:v('d-neck-bags-raw'),
       목뼈_삶은후:v('d-neck-cooked'), 목뼈_당일재고:v('d-neck-stock'), 목뼈_사용량:nu,
       목뼈_입고봉:v('d-neck-in-bags'), 목뼈_입고kg:v('d-neck-in-kg'),
@@ -385,7 +416,15 @@ async function saveD(){
       갈비_입고box:v('d-rib-in-box'), 갈비_안삶은box:v('d-rib-raw-box'), 갈비_안삶은kg:v('d-rib-raw-kg'),
       홀뼈판매:v('d-sales-hall'), 갈비탕판매:v('d-sales-galbi'),
       배민:v('d-sales-baemin'), 쿠팡:v('d-sales-coupang'), 배달합산:del, 총매출:tot});
-    showToast('✅ 구글 시트에 저장됐어요!');
+    showToast('✅ 저장됐어요!');
+    // calData 갱신 (덮어쓰기 반영)
+    const nu2=v('d-neck-prev')+v('d-neck-cooked')-v('d-neck-stock');
+    const ru2=v('d-rib-prev')+v('d-rib-cooked')-v('d-rib-stock');
+    const del2=v('d-sales-baemin')+v('d-sales-coupang');
+    const newRec={action:'upsert',store:'dunsanok',date:document.getElementById('d-date').value,작성자:document.getElementById('d-writer').value||'미입력',목뼈_전날재고:v('d-neck-prev'),목뼈_삶기전:v('d-neck-raw'),목뼈_봉수:v('d-neck-bags-raw'),목뼈_삶은후:v('d-neck-cooked'),목뼈_당일재고:v('d-neck-stock'),목뼈_사용량:nu2,목뼈_입고봉:v('d-neck-in-bags'),목뼈_입고kg:v('d-neck-in-kg'),목뼈_총재고봉:v('d-neck-total-bags'),목뼈_총재고kg:v('d-neck-total-kg'),갈비_전날재고:v('d-rib-prev'),갈비_냉동작업량:v('d-rib-frozen'),갈비_삶은후:v('d-rib-cooked'),갈비_당일재고:v('d-rib-stock'),갈비_사용량:ru2,갈비_입고box:v('d-rib-in-box'),갈비_안삶은box:v('d-rib-raw-box'),갈비_안삶은kg:v('d-rib-raw-kg'),홀뼈판매:v('d-sales-hall'),갈비탕판매:v('d-sales-galbi'),배민:v('d-sales-baemin'),쿠팡:v('d-sales-coupang'),배달합산:del2,총매출:v('d-sales-hall')+v('d-sales-galbi')+del2};
+    const di=calData.findIndex(r=>r.store==='dunsanok'&&r.date===newRec.date);
+    if(di>=0) calData[di]=newRec; else calData.push(newRec);
+    if(document.getElementById('recent-list')) renderRecentList();
   }catch(e){ showToast('❌ 저장 실패. 인터넷 확인해주세요', true); }
   setLoading('btn-d', false);
 }
@@ -394,11 +433,17 @@ async function saveC(){
   setLoading('btn-c', true);
   const u=v('c-prev')+v('c-in')-v('c-stock');
   const del=v('c-baemin')+v('c-coupang');
+  const dateVal=document.getElementById('c-date').value;
   try{
-    await postData({store:'chungdam', date:document.getElementById('c-date').value,
+    await postData({action:'upsert', store:'chungdam', date:dateVal,
+      작성자:document.getElementById('c-writer').value||'미입력',
       전날재고:v('c-prev'), 입고:v('c-in'), 오늘재고:v('c-stock'), 사용량:u,
       배민:v('c-baemin'), 쿠팡:v('c-coupang'), 배달합산:del, 총매출:v('c-total')});
-    showToast('✅ 구글 시트에 저장됐어요!');
+    showToast('✅ 저장됐어요!');
+    const newRec={store:'chungdam',date:dateVal,작성자:document.getElementById('c-writer').value||'미입력',전날재고:v('c-prev'),입고:v('c-in'),오늘재고:v('c-stock'),사용량:u,배민:v('c-baemin'),쿠팡:v('c-coupang'),배달합산:del,총매출:v('c-total')};
+    const ci=calData.findIndex(r=>r.store==='chungdam'&&r.date===dateVal);
+    if(ci>=0) calData[ci]=newRec; else calData.push(newRec);
+    if(document.getElementById('recent-list')) renderRecentList();
   }catch(e){ showToast('❌ 저장 실패. 인터넷 확인해주세요', true); }
   setLoading('btn-c', false);
 }
@@ -408,70 +453,237 @@ async function saveN(){
   const sg=v('n-sg-work')-v('n-sg-stock');
   const ms=v('n-ms-work')-v('n-ms-stock');
   const ap=v('n-ap-work')-v('n-ap-stock');
+  const dateVal=document.getElementById('n-date').value;
   try{
-    await postData({store:'namwon', date:document.getElementById('n-date').value,
+    await postData({action:'upsert', store:'namwon', date:dateVal,
+      작성자:document.getElementById('n-writer').value||'미입력',
       삼겹살_박스:v('n-sg-box'), 목살_박스:v('n-ms-box'), 앞다리_박스:v('n-ap-box'),
       삼겹살_작업량:v('n-sg-work'), 목살_작업량:v('n-ms-work'), 앞다리_작업량:v('n-ap-work'),
       삼겹살_재고:v('n-sg-stock'), 목살_재고:v('n-ms-stock'), 앞다리_재고:v('n-ap-stock'),
       삼겹살_사용량:sg, 목살_사용량:ms, 앞다리_사용량:ap,
       총사용량:(sg>0?sg:0)+(ms>0?ms:0)+(ap>0?ap:0)});
-    showToast('✅ 구글 시트에 저장됐어요!');
+    showToast('✅ 저장됐어요!');
+    const newRec={store:'namwon',date:dateVal,작성자:document.getElementById('n-writer').value||'미입력',삼겹살_박스:v('n-sg-box'),목살_박스:v('n-ms-box'),앞다리_박스:v('n-ap-box'),삼겹살_작업량:v('n-sg-work'),목살_작업량:v('n-ms-work'),앞다리_작업량:v('n-ap-work'),삼겹살_재고:v('n-sg-stock'),목살_재고:v('n-ms-stock'),앞다리_재고:v('n-ap-stock'),삼겹살_사용량:sg,목살_사용량:ms,앞다리_사용량:ap,총사용량:(sg>0?sg:0)+(ms>0?ms:0)+(ap>0?ap:0)};
+    const ni=calData.findIndex(r=>r.store==='namwon'&&r.date===dateVal);
+    if(ni>=0) calData[ni]=newRec; else calData.push(newRec);
+    if(document.getElementById('recent-list')) renderRecentList();
   }catch(e){ showToast('❌ 저장 실패. 인터넷 확인해주세요', true); }
   setLoading('btn-n', false);
 }
 
-let currentFilter='all';
-function filterH(f){
-  currentFilter=f;
-  ['all','dunsanok','chungdam','namwon'].forEach(k=>{
-    document.getElementById('hf-'+k)?.classList.toggle('active',k===f);
-  });
-  renderH(f);
+// ── 달력 ──
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let calData = [];
+
+function showPage(name, btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='history'){ loadCalData(); }
 }
 
-async function renderH(f){
-  const list=document.getElementById('history-list');
-  list.innerHTML='<div class="loading"><span class="spinner"></span>불러오는 중...</div>';
+async function loadCalData(){
   try{
-    const stores = f==='all' ? ['dunsanok','chungdam','namwon'] : [f];
     let all=[];
-    for(const s of stores){
+    for(const s of ['dunsanok','chungdam','namwon']){
       const res=await fetch(API+'?store='+s);
       const data=await res.json();
       all=[...all,...data.map(r=>({...r,store:s}))];
     }
-    all.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-    if(!all.length){ list.innerHTML='<div class="hist-empty">📭 저장된 기록이 없습니다</div>'; return; }
-    list.innerHTML=all.map(r=>{
-      const label=r.store==='dunsanok'?'🍲 둔산옥':r.store==='chungdam'?'🥘 청담':'🥩 남원';
-      let grid='';
-      if(r.store==='dunsanok'){
-        grid=`<div class="hist-stat"><div class="hist-stat-label">목뼈 사용량</div><div class="hist-stat-val" style="color:var(--blue)">${Number(r.목뼈_사용량||0).toFixed(3)} kg</div></div>
-              <div class="hist-stat"><div class="hist-stat-label">갈비뼈 사용량</div><div class="hist-stat-val" style="color:var(--orange)">${Number(r.갈비_사용량||0).toFixed(3)} kg</div></div>
-              <div class="hist-stat"><div class="hist-stat-label">목뼈 재고</div><div class="hist-stat-val">${Number(r.목뼈_당일재고||0).toFixed(3)} kg</div></div>
-              <div class="hist-stat"><div class="hist-stat-label">총 매출</div><div class="hist-stat-val" style="color:var(--green)">${Number(r.총매출||0).toLocaleString()}원</div></div>`;
-      } else if(r.store==='chungdam'){
-        grid=`<div class="hist-stat"><div class="hist-stat-label">고기 사용량</div><div class="hist-stat-val" style="color:var(--purple)">${Number(r.사용량||0).toFixed(3)} kg</div></div>
-              <div class="hist-stat"><div class="hist-stat-label">오늘 재고</div><div class="hist-stat-val">${Number(r.오늘재고||0).toFixed(3)} kg</div></div>
-              <div class="hist-stat"><div class="hist-stat-label">배달 합산</div><div class="hist-stat-val" style="color:var(--yellow)">${Number(r.배달합산||0).toLocaleString()}원</div></div>
-              <div class="hist-stat"><div class="hist-stat-label">총 매출</div><div class="hist-stat-val" style="color:var(--green)">${Number(r.총매출||0).toLocaleString()}원</div></div>`;
-      } else {
-        grid=`<div class="hist-stat"><div class="hist-stat-label">삼겹살</div><div class="hist-stat-val" style="color:var(--blue)">${Number(r.삼겹살_사용량||0).toLocaleString()} g</div></div>
-              <div class="hist-stat"><div class="hist-stat-label">목살</div><div class="hist-stat-val" style="color:var(--blue)">${Number(r.목살_사용량||0).toLocaleString()} g</div></div>
-              <div class="hist-stat"><div class="hist-stat-label">앞다리살</div><div class="hist-stat-val" style="color:var(--blue)">${Number(r.앞다리_사용량||0).toLocaleString()} g</div></div>
-              <div class="hist-stat"><div class="hist-stat-label">총 사용량</div><div class="hist-stat-val" style="color:var(--green)">${Number(r.총사용량||0).toLocaleString()} g</div></div>`;
-      }
-      return `<div class="hist-item">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div class="hist-date">${r.date||'날짜없음'}</div>
-          <div style="font-size:11px;color:var(--muted)">${label}</div>
+    calData=all;
+    renderCal();
+    renderRecentList();
+  }catch(e){ renderCal(); document.getElementById('recent-list').innerHTML='<div class="hist-empty">불러오기 실패. 인터넷을 확인해주세요.</div>'; }
+}
+
+function renderRecentList(){
+  const el=document.getElementById('recent-list');
+  if(!calData.length){ el.innerHTML='<div class="hist-empty">저장된 기록이 없어요</div>'; return; }
+  // 날짜 내림차순 정렬
+  const sorted=[...calData].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const storeLabel=s=>s==='dunsanok'?'🍲 둔산옥':s==='chungdam'?'🥘 청담칼국수':'🥩 남원식당';
+  const storeColor=s=>s==='dunsanok'?'var(--blue)':s==='chungdam'?'var(--purple)':'var(--orange)';
+  let html='';
+  sorted.forEach((r,idx)=>{
+    const label=storeLabel(r.store);
+    const color=storeColor(r.store);
+    let summary='';
+    if(r.store==='dunsanok') summary=`목뼈 사용량 <b style="color:var(--blue)">${Number(r.목뼈_사용량||0).toFixed(3)}kg</b> · 총매출 <b style="color:var(--green)">${Number(r.총매출||0).toLocaleString()}원</b>`;
+    else if(r.store==='chungdam') summary=`사용량 <b style="color:var(--purple)">${Number(r.사용량||0).toFixed(3)}kg</b> · 총매출 <b style="color:var(--green)">${Number(r.총매출||0).toLocaleString()}원</b>`;
+    else summary=`총사용량 <b style="color:var(--blue)">${Number(r.총사용량||0).toLocaleString()}g</b>`;
+    html+=`<div class="hist-item">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div>
+          <span style="font-size:12px;font-weight:700;color:${color}">${label}</span>
+          <span style="font-size:11px;color:var(--muted);margin-left:8px">📅 ${r.date||'-'}</span>
+          ${r.작성자?`<span style="font-size:11px;color:var(--muted);margin-left:6px">✍️ ${r.작성자}</span>`:''}
         </div>
-        <div class="hist-grid">${grid}</div>
-      </div>`;
-    }).join('');
-  }catch(e){
-    list.innerHTML='<div class="hist-empty">❌ 불러오기 실패. 인터넷 확인해주세요</div>';
+        <button onclick="editRecordFromList(${idx})" style="background:rgba(88,166,255,.15);border:1px solid rgba(88,166,255,.3);color:var(--blue);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;flex-shrink:0">✏️ 수정</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted)">${summary}</div>
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+
+function editRecordFromList(sortedIdx){
+  const sorted=[...calData].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const r=sorted[sortedIdx];
+  if(!r) return;
+  const storeTab=r.store==='dunsanok'?0:r.store==='chungdam'?1:2;
+  document.querySelectorAll('.tab')[storeTab].click();
+  // editRecord 재활용: calData 인덱스 찾기
+  const idx=calData.filter(rec=>rec.date===r.date).findIndex(rec=>rec.store===r.store);
+  editRecord(idx, r.date);
+}
+
+function prevMonth(){ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCal(); }
+function nextMonth(){ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCal(); }
+
+function renderCal(){
+  const months=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  document.getElementById('cal-title').textContent=`${calYear}년 ${months[calMonth]}`;
+  const firstDay=new Date(calYear,calMonth,1).getDay();
+  const lastDate=new Date(calYear,calMonth+1,0).getDate();
+  const todayStr=new Date().toISOString().split('T')[0];
+
+  // 이번달 데이터 있는 날짜 모으기
+  const dateDots={};
+  calData.forEach(r=>{
+    if(!r.date) return;
+    const d=r.date.substring(0,7);
+    const ym=`${calYear}-${String(calMonth+1).padStart(2,'0')}`;
+    if(d===ym){
+      if(!dateDots[r.date]) dateDots[r.date]=[];
+      dateDots[r.date].push(r.store);
+    }
+  });
+
+  let html='';
+  for(let i=0;i<firstDay;i++) html+=`<div></div>`;
+  for(let d=1;d<=lastDate;d++){
+    const dateStr=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday=dateStr===todayStr;
+    const dots=dateDots[dateStr]||[];
+    const hasDot=dots.length>0;
+    html+=`<div onclick="selectDate('${dateStr}')" style="text-align:center;padding:6px 2px;cursor:pointer;border-radius:8px;${isToday?'background:var(--blue);':''}">
+      <div style="font-size:13px;font-weight:${hasDot?'700':'400'};color:${isToday?'#0d1117':hasDot?'var(--text)':'var(--muted)'}">${d}</div>
+      ${hasDot?`<div style="display:flex;justify-content:center;gap:2px;margin-top:2px">${dots.slice(0,3).map(s=>
+        `<div style="width:5px;height:5px;border-radius:50%;background:${s==='dunsanok'?'var(--blue)':s==='chungdam'?'var(--purple)':'var(--orange)'}"></div>`
+      ).join('')}</div>`:''}
+    </div>`;
   }
+  document.getElementById('cal-grid').innerHTML=html;
+}
+
+async function selectDate(dateStr){
+  const detail=document.getElementById('cal-detail');
+  detail.innerHTML='<div class="loading"><span class="spinner"></span>불러오는 중...</div>';
+  const dayRecs=calData.filter(r=>r.date===dateStr);
+  if(!dayRecs.length){
+    detail.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">📭 ${dateStr} 기록 없음</div>`;
+    return;
+  }
+  let html=`<div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:10px">📅 ${dateStr}</div>`;
+  dayRecs.forEach((r,idx)=>{
+    const label=r.store==='dunsanok'?'🍲 둔산옥':r.store==='chungdam'?'🥘 청담칼국수':'🥩 남원식당';
+    let content='';
+    if(r.store==='dunsanok'){
+      content=`<div class="hist-grid">
+        <div class="hist-stat"><div class="hist-stat-label">목뼈 사용량</div><div class="hist-stat-val" style="color:var(--blue)">${Number(r.목뼈_사용량||0).toFixed(3)} kg</div></div>
+        <div class="hist-stat"><div class="hist-stat-label">갈비뼈 사용량</div><div class="hist-stat-val" style="color:var(--orange)">${Number(r.갈비_사용량||0).toFixed(3)} kg</div></div>
+        <div class="hist-stat"><div class="hist-stat-label">목뼈 재고</div><div class="hist-stat-val">${Number(r.목뼈_당일재고||0).toFixed(3)} kg</div></div>
+        <div class="hist-stat"><div class="hist-stat-label">총 매출</div><div class="hist-stat-val" style="color:var(--green)">${Number(r.총매출||0).toLocaleString()}원</div></div>
+      </div>`;
+    } else if(r.store==='chungdam'){
+      content=`<div class="hist-grid">
+        <div class="hist-stat"><div class="hist-stat-label">고기 사용량</div><div class="hist-stat-val" style="color:var(--purple)">${Number(r.사용량||0).toFixed(3)} kg</div></div>
+        <div class="hist-stat"><div class="hist-stat-label">오늘 재고</div><div class="hist-stat-val">${Number(r.오늘재고||0).toFixed(3)} kg</div></div>
+        <div class="hist-stat"><div class="hist-stat-label">배달 합산</div><div class="hist-stat-val" style="color:var(--yellow)">${Number(r.배달합산||0).toLocaleString()}원</div></div>
+        <div class="hist-stat"><div class="hist-stat-label">총 매출</div><div class="hist-stat-val" style="color:var(--green)">${Number(r.총매출||0).toLocaleString()}원</div></div>
+      </div>`;
+    } else {
+      content=`<div class="hist-grid">
+        <div class="hist-stat"><div class="hist-stat-label">삼겹살</div><div class="hist-stat-val" style="color:var(--blue)">${Number(r.삼겹살_사용량||0).toLocaleString()} g</div></div>
+        <div class="hist-stat"><div class="hist-stat-label">목살</div><div class="hist-stat-val" style="color:var(--blue)">${Number(r.목살_사용량||0).toLocaleString()} g</div></div>
+        <div class="hist-stat"><div class="hist-stat-label">앞다리살</div><div class="hist-stat-val" style="color:var(--blue)">${Number(r.앞다리_사용량||0).toLocaleString()} g</div></div>
+        <div class="hist-stat"><div class="hist-stat-label">총 사용량</div><div class="hist-stat-val" style="color:var(--green)">${Number(r.총사용량||0).toLocaleString()} g</div></div>
+      </div>`;
+    }
+    html+=`<div class="hist-item">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700">${label}</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${r.작성자?`<div style="font-size:11px;color:var(--muted)">✍️ ${r.작성자}</div>`:''}
+          <button onclick="editRecord(${idx},'${dateStr}')" style="background:rgba(88,166,255,.15);border:1px solid rgba(88,166,255,.3);color:var(--blue);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:'Noto Sans KR',sans-serif">✏️ 수정</button>
+        </div>
+      </div>
+      ${content}
+    </div>`;
+  });
+  detail.innerHTML=html;
+}
+
+function editRecord(idx, dateStr){
+  const r = calData.filter(rec=>rec.date===dateStr)[idx];
+  if(!r) return;
+
+  // 해당 매장 탭으로 이동해서 데이터 채우기
+  const storeTab = r.store==='dunsanok'?0:r.store==='chungdam'?1:2;
+  const tabs = document.querySelectorAll('.tab');
+  tabs[storeTab].click();
+
+  if(r.store==='dunsanok'){
+    document.getElementById('d-date').value=r.date||'';
+    document.getElementById('d-writer').value=r.작성자||'';
+    document.getElementById('d-neck-prev').value=r.목뼈_전날재고||'';
+    document.getElementById('d-neck-raw').value=r.목뼈_삶기전||'';
+    document.getElementById('d-neck-bags-raw').value=r.목뼈_봉수||'';
+    document.getElementById('d-neck-cooked').value=r.목뼈_삶은후||'';
+    document.getElementById('d-neck-stock').value=r.목뼈_당일재고||'';
+    document.getElementById('d-neck-in-bags').value=r.목뼈_입고봉||'';
+    document.getElementById('d-neck-in-kg').value=r.목뼈_입고kg||'';
+    document.getElementById('d-neck-total-bags').value=r.목뼈_총재고봉||'';
+    document.getElementById('d-neck-total-kg').value=r.목뼈_총재고kg||'';
+    document.getElementById('d-rib-prev').value=r.갈비_전날재고||'';
+    document.getElementById('d-rib-frozen').value=r.갈비_냉동작업량||'';
+    document.getElementById('d-rib-cooked').value=r.갈비_삶은후||'';
+    document.getElementById('d-rib-stock').value=r.갈비_당일재고||'';
+    document.getElementById('d-rib-in-box').value=r.갈비_입고box||'';
+    document.getElementById('d-rib-raw-box').value=r.갈비_안삶은box||'';
+    document.getElementById('d-rib-raw-kg').value=r.갈비_안삶은kg||'';
+    document.getElementById('d-sales-hall').value=r.홀뼈판매||'';
+    document.getElementById('d-sales-galbi').value=r.갈비탕판매||'';
+    document.getElementById('d-sales-baemin').value=r.배민||'';
+    document.getElementById('d-sales-coupang').value=r.쿠팡||'';
+    calcD();
+  } else if(r.store==='chungdam'){
+    document.getElementById('c-date').value=r.date||'';
+    document.getElementById('c-writer').value=r.작성자||'';
+    document.getElementById('c-prev').value=r.전날재고||'';
+    document.getElementById('c-in').value=r.입고||'';
+    document.getElementById('c-stock').value=r.오늘재고||'';
+    document.getElementById('c-baemin').value=r.배민||'';
+    document.getElementById('c-coupang').value=r.쿠팡||'';
+    document.getElementById('c-total').value=r.총매출||'';
+    calcC();
+  } else {
+    document.getElementById('n-date').value=r.date||'';
+    document.getElementById('n-writer').value=r.작성자||'';
+    document.getElementById('n-sg-box').value=r.삼겹살_박스||'';
+    document.getElementById('n-ms-box').value=r.목살_박스||'';
+    document.getElementById('n-ap-box').value=r.앞다리_박스||'';
+    document.getElementById('n-sg-work').value=r.삼겹살_작업량||'';
+    document.getElementById('n-ms-work').value=r.목살_작업량||'';
+    document.getElementById('n-ap-work').value=r.앞다리_작업량||'';
+    document.getElementById('n-sg-stock').value=r.삼겹살_재고||'';
+    document.getElementById('n-ms-stock').value=r.목살_재고||'';
+    document.getElementById('n-ap-stock').value=r.앞다리_재고||'';
+    calcN();
+  }
+  showToast('✏️ 데이터를 불러왔어요! 수정 후 저장해주세요');
 }
 </script>
 </body>
